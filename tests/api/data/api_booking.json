@@ -1,0 +1,9 @@
+{
+  "booking_payload": {
+    "courtId": 3,
+    "customerPhone": "+5491001000001",
+    "customerFirstName": "Juan Pérez",
+    "date": "2026-07-20",
+    "startTime": "14:00:00"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "users": {
+    "super_admin": {
+      "email": "agendarsupport@gmail.com",
+      "password": "Admin1234"
+    },
+    "owner": {
+      "email": "",
+      "password": ""
+    },
+    "staff": {
+      "email": "",
+      "password": ""
+    },
+    "customer": {
+      "email": "",
+      "password": ""
+    }
+  }
+}

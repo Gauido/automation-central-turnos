@@ -1,0 +1,16 @@
+{
+  "tenants": {
+    "active": {
+      "tenant_id": ""
+    },
+    "expired": {
+      "tenant_id": "4"
+    },
+    "free": {
+      "tenant_id": ""
+    },
+    "pro": {
+      "tenant_id": ""
+    }
+  }
+}
