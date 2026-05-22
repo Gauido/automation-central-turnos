@@ -5,11 +5,11 @@
       "password": "Admin1234"
     },
     "owner": {
-      "email": "",
+      "email": "qa-owner@botturnos.test",
       "password": ""
     },
     "staff": {
-      "email": "",
+      "email": "qa-staff@botturnos.test",
       "password": ""
     },
     "customer": {

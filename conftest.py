@@ -1,4 +1,6 @@
 from collections.abc import Generator
+from datetime import datetime
+import json
 from pathlib import Path
 import shutil
 
@@ -10,12 +12,14 @@ from playwright.sync_api import Browser, BrowserContext, Page
 from api.auth_client import AuthClient
 from api.bookings_client import BookingsClient
 from api.cash_client import CashClient
+from api.qa_client import QaClient
 from config.settings import Settings, get_settings
 from utils.json_reader import read_json
 from utils.logger import get_logger
 
 
 logger = get_logger(__name__)
+ARTIFACTS_DIR = Path("artifacts/dom")
 
 
 def _allure_dir(config: pytest.Config) -> Path | None:
@@ -23,16 +27,60 @@ def _allure_dir(config: pytest.Config) -> Path | None:
     return Path(allure_dir) if allure_dir else None
 
 
+def _mask_text(value: str) -> str:
+    return value.replace(get_settings().qa_token or "", "***")
+
+
 def pytest_sessionstart(session: pytest.Session) -> None:
     allure_dir = _allure_dir(session.config)
-    if not allure_dir or not allure_dir.exists():
+    if not allure_dir:
         return
+
+    allure_dir.mkdir(parents=True, exist_ok=True)
 
     for item in allure_dir.iterdir():
         if item.is_dir():
             shutil.rmtree(item)
         else:
             item.unlink()
+
+    settings = get_settings()
+    (allure_dir / "environment.properties").write_text(
+        "\n".join(
+            [
+                f"env={settings.env}",
+                f"web_base_url={settings.web_base_url}",
+                f"api_base_url={settings.api_base_url}",
+                f"qa_api_base_url={settings.qa_api_base_url or ''}",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (allure_dir / "categories.json").write_text(
+        json.dumps(
+            [
+                {"name": "Product defect", "matchedStatuses": ["failed"]},
+                {"name": "Test defect", "matchedStatuses": ["broken"]},
+                {"name": "Skipped - missing QA data", "matchedStatuses": ["skipped"], "messageRegex": ".*Falta.*|.*Missing.*"},
+            ],
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+
+def pytest_runtest_setup(item: pytest.Item) -> None:
+    settings = get_settings()
+    data = {
+        "nodeid": item.nodeid,
+        "markers": sorted(marker.name for marker in item.iter_markers()),
+        "env": settings.env,
+    }
+    allure.attach(
+        json.dumps(data, indent=2, ensure_ascii=False),
+        name="datos-del-test.json",
+        attachment_type=allure.attachment_type.JSON,
+    )
 
 
 @pytest.fixture(scope="session")
@@ -94,7 +142,12 @@ def api_auth_client(settings: Settings) -> Generator[AuthClient, None, None]:
 @pytest.fixture(scope="session")
 def api_token(api_auth_client: AuthClient, api_users: dict) -> str:
     user = api_users["users"]["super_admin"]
-    return api_auth_client.login(user["email"], user["password"]).access_token
+    previous = api_auth_client.reporting_enabled
+    api_auth_client.reporting_enabled = False
+    try:
+        return api_auth_client.login(user["email"], user["password"]).access_token
+    finally:
+        api_auth_client.reporting_enabled = previous
 
 
 @pytest.fixture()
@@ -112,6 +165,32 @@ def cash_client(settings: Settings, api_token: str, api_booking: dict) -> Genera
     client.set_tenant(api_booking["tenant_id"])
     yield client
     client.close()
+
+
+@pytest.fixture(scope="session")
+def qa_client(settings: Settings) -> Generator[QaClient, None, None]:
+    if not settings.qa_api_base_url:
+        pytest.skip("Missing QA_API_BASE_URL in .env")
+    if not settings.qa_token:
+        pytest.skip("Missing QA_TOKEN in .env")
+
+    client = QaClient(
+        str(settings.qa_api_base_url),
+        settings.qa_token,
+        settings.api_timeout_seconds,
+        verify=not settings.ignore_https_errors,
+    )
+    yield client
+    client.close()
+
+
+@pytest.fixture(scope="session")
+def qa_test_data(qa_client: QaClient) -> dict:
+    response = qa_client.get_silent("/test-data")
+    if response.status_code != 200:
+        pytest.skip("QA test-data endpoint not available")
+    body = response.json()
+    return body.get("data") or body
 
 
 @pytest.fixture(scope="session")
@@ -167,21 +246,34 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
     if report.when != "call" or not report.failed:
         return
 
+    error_data = {
+        "nodeid": item.nodeid,
+        "phase": report.when,
+        "outcome": report.outcome,
+        "message": _mask_text(str(report.longrepr))[:2000],
+    }
+    allure.attach(
+        json.dumps(error_data, indent=2, ensure_ascii=False),
+        name="error.json",
+        attachment_type=allure.attachment_type.JSON,
+    )
+
     page = item.funcargs.get("page")
     if page is None:
         return
 
     try:
-        artifacts_dir = Path("artifacts/dom")
-        artifacts_dir.mkdir(parents=True, exist_ok=True)
+        ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
         safe_name = item.nodeid.replace("::", "_").replace("/", "_").replace("\\", "_").replace(":", "_")
-        (artifacts_dir / f"{safe_name}.url.txt").write_text(page.url, encoding="utf-8")
-        (artifacts_dir / f"{safe_name}.html").write_text(page.content(), encoding="utf-8")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        artifact_name = f"{timestamp}_{safe_name}"
+        (ARTIFACTS_DIR / f"{artifact_name}.url.txt").write_text(page.url, encoding="utf-8")
+        (ARTIFACTS_DIR / f"{artifact_name}.html").write_text(page.content(), encoding="utf-8")
 
         screenshot = page.screenshot(full_page=True)
         allure.attach(
             screenshot,
-            name="failure-screenshot",
+            name=f"{artifact_name}.png",
             attachment_type=allure.attachment_type.PNG,
         )
     except Exception as exc:  # pragma: no cover - best effort diagnostic hook

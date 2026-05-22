@@ -15,6 +15,11 @@ class Settings(BaseSettings):
     env: str = "dev"
     web_base_url: AnyHttpUrl = "https://72-60-241-195.nip.io:8443"
     api_base_url: AnyHttpUrl = "https://72-60-241-195.nip.io:8443"
+    qa_api_base_url: AnyHttpUrl | None = Field(
+        default="https://72-60-241-195.nip.io:8443/api/qa",
+        validation_alias="QA_API_BASE_URL",
+    )
+    qa_token: str | None = Field(default=None, validation_alias="QA_TOKEN")
 
     admin_email: str | None = None
     admin_password: str | None = None

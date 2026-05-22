@@ -4,6 +4,7 @@ from playwright.sync_api import Page
 
 from config.settings import Settings
 from pages.login_page import LoginPage
+from utils.allure_helpers import attach_final_screenshot
 from utils.test_logger import log_test, ok_log, step_log
 
 
@@ -30,15 +31,11 @@ def test_web_login_super_admin(page: Page, web_users: dict, settings: Settings, 
         attachment_type=allure.attachment_type.TEXT,
     )
 
-    login_page = LoginPage(page)
-    step_log("abrir login")
-    login_page.open()
-    step_log("enviar credenciales")
-    login_page.login(user["email"], user["password"])
-    login_page.expect_logged_in()
-    ok_log("login exitoso")
-    allure.attach(
-        page.screenshot(full_page=True),
-        name="login-home-final",
-        attachment_type=allure.attachment_type.PNG,
-    )
+    with allure.step("Login exitoso"):
+        login_page = LoginPage(page)
+        login_page.open()
+        login_page.login(user["email"], user["password"])
+        login_page.expect_logged_in()
+        step_log("Login exitoso")
+        ok_log("login exitoso")
+        attach_final_screenshot(page, "login-home-final")

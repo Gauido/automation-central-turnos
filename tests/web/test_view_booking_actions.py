@@ -5,6 +5,7 @@ from playwright.sync_api import Page
 from config.settings import Settings
 from pages.bookings_page import BookingsPage
 from pages.login_page import LoginPage
+from utils.allure_helpers import attach_final_screenshot
 from utils.test_logger import step_log
 
 
@@ -40,10 +41,5 @@ def test_view_booking_from_grid_actions(page: Page, web_users: dict, settings: S
         bookings_page.open()
         bookings_page.open_first_booking_details()
         bookings_page.expect_booking_details()
-        page.wait_for_timeout(1000)
         step_log("Detalle de reserva visible")
-        allure.attach(
-            page.screenshot(full_page=True),
-            name="booking-detail-final",
-            attachment_type=allure.attachment_type.PNG,
-        )
+        attach_final_screenshot(page, "booking-detail-final")

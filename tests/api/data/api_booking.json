@@ -1,9 +1,13 @@
 {
+  "tenant_id": "9001",
+  "court_id": 9001,
+  "customer_clean_id": 9003,
+  "qa_controlled": true,
   "booking_payload": {
-    "courtId": 3,
-    "customerPhone": "+5491001000001",
-    "customerFirstName": "Juan Pérez",
-    "date": "2026-07-20",
-    "startTime": "14:00:00"
+    "courtId": 9001,
+    "customerPhone": "+5491155555503",
+    "customerFirstName": "QA Clean Customer",
+    "date": "2026-06-21",
+    "startTime": "21:00:00"
   }
 }

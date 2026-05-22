@@ -1,7 +1,11 @@
 {
   "booking": {
-    "customer_name": "Juan Pérez",
-    "customer_search": "Juan",
+    "customer_name": "QA Clean Customer",
+    "customer_search": "+5491155555503",
+    "customer_clean_id": 9003,
+    "court_name": "QA Court",
+    "qa_controlled_customer": true,
+    "web_booking_create_enabled": false,
     "amount": "1"
   }
 }

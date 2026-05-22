@@ -1,7 +1,7 @@
 {
   "tenants": {
     "active": {
-      "tenant_id": ""
+      "tenant_id": "9001"
     },
     "expired": {
       "tenant_id": "4"

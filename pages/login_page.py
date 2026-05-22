@@ -18,3 +18,11 @@ class LoginPage(BasePage):
 
     def expect_logged_in(self) -> None:
         expect(self.page).not_to_have_url(re.compile(r".*/login(?:[/?#].*)?$"))
+
+    def expect_invalid_login(self) -> None:
+        expect(self.page).to_have_url(re.compile(r".*/login(?:[/?#].*)?$"))
+        expect(
+            self.page.locator(".toast, .alert, [role='alert'], .form__api-error").filter(
+                has_text=re.compile(r"(credencial|invalid|incorrect|error|no autorizado)", re.IGNORECASE)
+            ).first
+        ).to_be_visible()
