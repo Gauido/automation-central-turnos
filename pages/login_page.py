@@ -12,9 +12,21 @@ class LoginPage(BasePage):
         self.goto(self.path)
 
     def login(self, email: str, password: str) -> None:
-        self.page.get_by_placeholder("Email").fill(email)
-        self.page.get_by_placeholder("Contraseña").fill(password)
-        self.page.get_by_role("button", name="Iniciar Sesion").click()
+        email_input = self.page.get_by_placeholder(re.compile(r"Email|Correo", re.I)).first
+        if email_input.count() == 0:
+            email_input = self.page.get_by_label(re.compile(r"Email|Correo", re.I)).first
+
+        password_input = self.page.get_by_placeholder(re.compile(r"Contrase", re.I)).first
+        if password_input.count() == 0:
+            password_input = self.page.get_by_label(re.compile(r"Contrase", re.I)).first
+
+        email_input.fill(email)
+        password_input.fill(password)
+
+        submit = self.page.get_by_role("button", name=re.compile(r"Iniciar|Ingresar|Login|Sesion|Sesi", re.I)).first
+        if submit.count() == 0:
+            submit = self.page.locator("button[type='submit']").first
+        submit.click()
 
     def expect_logged_in(self) -> None:
         expect(self.page).not_to_have_url(re.compile(r".*/login(?:[/?#].*)?$"))

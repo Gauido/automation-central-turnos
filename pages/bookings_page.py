@@ -18,6 +18,12 @@ class BookingsPage(BasePage):
         self.page.get_by_role("button", name="Acciones").first.click()
         expect(self.page.get_by_text("Gestionar Reserva", exact=True)).to_be_visible()
 
+    def has_visible_bookings(self) -> bool:
+        empty = self.page.locator(".bk-empty").filter(has_text=re.compile(r"No se encontraron reservas|No hay reservas", re.I))
+        if empty.count() > 0 and empty.first.is_visible():
+            return False
+        return self.page.locator('[role="row"]').count() > 1
+
     def expect_booking_details(self) -> None:
         expect(self.page.get_by_role("heading", name=re.compile(r"Gestionar Reserva"))).to_be_visible()
         expect(self.page.get_by_text("Turno", exact=True)).to_be_visible()

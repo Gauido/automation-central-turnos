@@ -24,7 +24,7 @@ def test_api_create_booking_active_tenant(
         pytest.skip("API booking data not QA-controlled yet")
 
     qa_client.reset_customer_silent(api_booking["customer_clean_id"])
-    bookings_client.set_tenant(tenant_id)
+    bookings_client.set_tenant(str(tenant_id))
     try:
         try:
             response = bookings_client.create_booking(api_booking["booking_payload"])
@@ -50,15 +50,31 @@ def test_api_create_booking_active_tenant(
 @allure.story("Tenant vencido bloquea reserva")
 def test_api_create_booking_expired_tenant_blocked(
     bookings_client: BookingsClient,
+    qa_client: QaClient,
     api_booking: dict,
     api_tenants: dict,
 ) -> None:
-    tenant_id = api_tenants["tenants"]["expired"]["tenant_id"]
-    if not tenant_id:
-        pytest.skip("Missing tenants.expired.tenant_id in tests/api/data/api_tenants.json")
+    response = qa_client.tenant_expired_data()
+    if response.status_code == 404:
+        pytest.skip("Documentado funcionalmente, pero no disponible en ambiente actual: /api/qa/tenant-expired-data")
+    assert response.status_code == 200
+    body = response.json()
+    data = body.get("data") or body
 
-    bookings_client.set_tenant(tenant_id)
-    response = bookings_client.create_booking(api_booking["booking_payload"])
+    tenant_id = data.get("tenantId") or data.get("tenant_id") or data.get("tenant", {}).get("id") or 9200
+    court_id = data.get("courtId") or data.get("court_id") or data.get("court", {}).get("id") or 9200
+    customer = data.get("customer") or {}
+    customer_phone = data.get("customerPhone") or customer.get("phone") or "+5491155559200"
+
+    payload = {
+        **api_booking["booking_payload"],
+        "courtId": court_id,
+        "customerPhone": customer_phone,
+        "customerFirstName": data.get("customerFirstName") or customer.get("firstName") or "QA Expired Customer",
+    }
+
+    bookings_client.set_tenant(str(tenant_id))
+    response = bookings_client.create_booking(payload)
     body = response.json()
 
     assert response.status_code in (400, 402)

@@ -1,3 +1,6 @@
+import re
+
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import expect
 
 from pages.base_page import BasePage
@@ -17,7 +20,21 @@ class CourtsPage(BasePage):
         self.page.locator("input[name='number']").fill(str(number))
         self.page.locator("input[name='name']").fill(name)
         self.page.get_by_role("button", name="Crear").click()
-        self.expect_court_visible(name)
+        self.wait_for_court_created(name)
+
+    def wait_for_court_created(self, name: str) -> None:
+        toast = self.page.locator(".toast, [role='alert']").filter(has_text=re.compile(r"cancha creada|creada", re.I))
+        try:
+            expect(toast.first).to_be_visible(timeout=10000)
+        except PlaywrightTimeoutError:
+            pass
+
+        try:
+            self.expect_court_visible(name)
+        except AssertionError:
+            self.page.reload(wait_until="networkidle")
+            expect(self.page.get_by_text("Gestion de Canchas", exact=True)).to_be_visible()
+            self.expect_court_visible(name)
 
     def expect_court_visible(self, name: str) -> None:
         expect(self.find_court_by_name(name)).to_be_visible()

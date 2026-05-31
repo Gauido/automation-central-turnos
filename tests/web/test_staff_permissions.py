@@ -5,7 +5,6 @@ from playwright.sync_api import Page, expect
 from config.settings import Settings
 from pages.login_page import LoginPage
 from utils.allure_helpers import attach_final_screenshot
-from utils.test_data_guards import require_user
 from utils.test_logger import step_log
 
 
@@ -15,8 +14,12 @@ pytestmark = [pytest.mark.web, pytest.mark.roles, pytest.mark.regression]
 @allure.feature("Roles")
 @allure.story("Permisos staff basicos")
 def test_staff_permissions_basic(page: Page, web_users: dict, settings: Settings, browser_name: str) -> None:
-    staff = web_users["users"]["staff"]
-    require_user(staff, "staff")
+    staff = {
+        "email": settings.staff_email or web_users["users"]["staff"].get("email"),
+        "password": settings.staff_password or web_users["users"]["staff"].get("password"),
+    }
+    if not staff["email"] or not staff["password"]:
+        pytest.skip("Staff credentials no configuradas en entorno local.")
 
     allure.attach(
         "\n".join(
