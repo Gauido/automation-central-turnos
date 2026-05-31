@@ -21,6 +21,9 @@ class QaClient(BaseClient):
     def cleanup_bookings(self, payload: dict | None = None):
         return self.post("/cleanup/bookings", json=payload or {})
 
+    def cleanup(self):
+        return self.post("/cleanup")
+
     def reset_customer(self, customer_id: int | str):
         return self.post(f"/reset-customer/{customer_id}")
 
@@ -48,6 +51,24 @@ class QaClient(BaseClient):
     def reset_cash_day(self, payload: dict | None = None):
         return self.post("/cash/reset-day", json=payload or {})
 
+    def cash_expense(self, payload: dict):
+        return self.post("/cash/expense", json=payload)
+
+    def open_cash_day(self, payload: dict | None = None):
+        return self.post("/cash/open-day", json=payload or {})
+
+    def create_customer(self, payload: dict):
+        return self.post("/customers", json=payload)
+
+    def add_customer_credit(self, customer_id: int | str, payload: dict):
+        return self.post(f"/customers/{customer_id}/credit", json=payload)
+
+    def create_staff_user(self, payload: dict):
+        return self.post("/users/staff", json=payload)
+
+    def create_owner_user(self, payload: dict):
+        return self.post("/users/owner", json=payload)
+
     def change_tenant_plan(self, tenant_id: int | str, payload: dict):
         return self.post(f"/tenant/{tenant_id}/change-plan", json=payload)
 
@@ -59,3 +80,15 @@ class QaClient(BaseClient):
 
     def tenant_switch_data(self, payload: dict | None = None):
         return self.post("/tenant-switch-data", json=payload or {})
+
+    def tenant_expired_data(self):
+        return self.post("/tenant-expired-data")
+
+    def create_tournament(self, payload: dict):
+        return self.post("/tournaments", json=payload)
+
+    def create_tournament_fixture(self, tournament_id: int | str, payload: dict):
+        return self.post(f"/tournaments/{tournament_id}/fixture", json=payload)
+
+    def create_tournament_registrations(self, tournament_id: int | str, payload: dict):
+        return self.post(f"/tournaments/{tournament_id}/registrations", json=payload)
