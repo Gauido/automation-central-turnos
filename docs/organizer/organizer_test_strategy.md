@@ -53,6 +53,35 @@ El modo se controla con `REPORT_MODE`:
 - `REPORT_MODE=normal`
 - `REPORT_MODE=debug`
 
+## Flag ATTACH_TEST_CONTEXT
+
+`ATTACH_TEST_CONTEXT` controla si se adjunta `datos-del-test.json` en Allure.
+
+Valores:
+
+- `true`: adjunta contexto del test.
+- `false`: no adjunta contexto del test.
+
+Ejemplos:
+
+```powershell
+$env:ATTACH_TEST_CONTEXT="true"
+.\scripts\run_health_report.ps1
+```
+
+```powershell
+$env:ATTACH_TEST_CONTEXT="false"
+.\scripts\run_health_report.ps1
+```
+
+Tambien se puede pasar como parametro:
+
+```powershell
+.\scripts\run_health_report.ps1 -AttachTestContext false
+```
+
+En reportes externos o CI publico se puede desactivar.
+
 ## Page Objects
 
 El Page Object principal es `pages/organizer_page.py`.

@@ -44,6 +44,39 @@ div[role="dialog"] input[placeholder="Ej: Apertura 2026"]
 - Expandir exports a Posiciones PDF, Partidos Excel y Cierre PDF.
 - Podio: confirmar si debe existir como tab Web o solo como endpoint/export.
 
+## Gaps Detectados Por Negativos
+
+- API resultado/tiebreak: `PUT/POST /api/organizer/matches/{mid}/result` acepta set `6-6`; esperado HTTP 400.
+- API bracket/reopen: `build-bracket` no queda disponible en el ambiente actual para validar reapertura de zona con bracket; test skipped controlado.
+- Web zonas: Organizer Web permite sortear zonas sin parejas suficientes; esperado bloqueo o validacion visible.
+
+## Negativos Cubiertos
+
+- Refund negativo sin nota devuelve HTTP 400.
+- Resultado con mas de 3 sets devuelve HTTP 400.
+- Remover pareja de zona con partido jugado devuelve HTTP 409.
+- Pareja incompleta en UI no se crea.
+- Generar partidos sin sorteo previo queda bloqueado/validado en UI.
+- Resultado invalido desde UI queda bloqueado/validado.
+
+## Gaps Detectados Por CRUD
+
+- API categorias: `GET /api/organizer/tournaments/{id}/categories` devuelve 405 en el ambiente actual, impidiendo validar update/delete por listado.
+- Web delete torneo: no hay accion estable visible/testeable para eliminar torneo.
+- Web edit categoria: no hay accion estable visible/testeable para editar categoria.
+- Web delete categoria: no hay accion estable visible/testeable para eliminar categoria.
+- Web edit pair: la accion detectada no abre formulario con inputs editables estables.
+- Web delete pair: la accion detectada no remueve la pareja visible; queda xfail hasta confirmar contrato UI/backend.
+
+## CRUD Cubierto
+
+- API editar torneo.
+- API eliminar torneo.
+- API editar pareja.
+- API eliminar pareja antes de sorteo.
+- API eliminar torneo con datos asociados.
+- Web editar torneo.
+
 ## Warning No Bloqueante
 
 En Windows aparece:

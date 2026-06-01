@@ -13,14 +13,32 @@ class OrganizerClient(BaseClient):
     def get_tournament(self, tournament_id: int | str):
         return self.get(f"/api/organizer/tournaments/{tournament_id}")
 
+    def update_tournament(self, tournament_id: int | str, payload: dict[str, Any]):
+        return self.request("PUT", f"/api/organizer/tournaments/{tournament_id}", json=payload)
+
     def delete_tournament(self, tournament_id: int | str):
         return self.request("DELETE", f"/api/organizer/tournaments/{tournament_id}")
+
+    def list_categories(self, tournament_id: int | str):
+        return self.get(f"/api/organizer/tournaments/{tournament_id}/categories")
 
     def create_category(self, tournament_id: int | str, payload: dict[str, Any]):
         return self.post(f"/api/organizer/tournaments/{tournament_id}/categories", json=payload)
 
+    def update_category(self, category_id: int | str, payload: dict[str, Any]):
+        return self.request("PUT", f"/api/organizer/categories/{category_id}", json=payload)
+
+    def delete_category(self, category_id: int | str):
+        return self.request("DELETE", f"/api/organizer/categories/{category_id}")
+
     def create_pair(self, category_id: int | str, payload: dict[str, Any]):
         return self.post(f"/api/organizer/categories/{category_id}/pairs", json=payload)
+
+    def update_pair(self, pair_id: int | str, payload: dict[str, Any]):
+        return self.request("PUT", f"/api/organizer/pairs/{pair_id}", json=payload)
+
+    def delete_pair(self, pair_id: int | str):
+        return self.request("DELETE", f"/api/organizer/pairs/{pair_id}")
 
     def random_assign_zones(self, category_id: int | str, payload: dict[str, Any]):
         return self.post(f"/api/organizer/categories/{category_id}/zones/random-assign", json=payload)
@@ -48,6 +66,12 @@ class OrganizerClient(BaseClient):
 
     def close_zone(self, zone_id: int | str):
         return self.post(f"/api/organizer/zones/{zone_id}/close", json={})
+
+    def reopen_zone(self, zone_id: int | str):
+        return self.post(f"/api/organizer/zones/{zone_id}/reopen", json={})
+
+    def remove_pair_from_zone(self, zone_id: int | str, pair_id: int | str):
+        return self.request("DELETE", f"/api/organizer/zones/{zone_id}/pairs/{pair_id}")
 
     def build_bracket(self, category_id: int | str):
         return self.post(f"/api/organizer/categories/{category_id}/build-bracket", json={})

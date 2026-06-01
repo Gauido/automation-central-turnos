@@ -44,8 +44,33 @@ class OrganizerPage(BasePage):
             return heading
         return self.page.get_by_text(self.title_pattern).first
 
+    def first_test_id(self, *testids: str):
+        for testid in testids:
+            locator = self.page.get_by_test_id(testid).first
+            if locator.count() > 0:
+                return locator
+        return self.page.get_by_test_id(testids[-1]).first
+
+    def field_by_test_id(self, *testids: str):
+        locator = self.first_test_id(*testids)
+        if locator.count() == 0:
+            return locator
+        nested = locator.locator("input, textarea, [contenteditable='true']").first
+        if nested.count() > 0:
+            return nested
+        return locator
+
+    def is_fillable_field(self, locator) -> bool:
+        if locator.count() == 0:
+            return False
+        return bool(
+            locator.evaluate(
+                """el => ['INPUT', 'TEXTAREA'].includes(el.tagName) || el.isContentEditable === true"""
+            )
+        )
+
     def create_tournament_button(self):
-        test_id = self.page.get_by_test_id("organizer-create-tournament-button").first
+        test_id = self.first_test_id("organizer-tournaments-btn-create", "organizer-create-tournament-button")
         if test_id.count() > 0:
             return test_id
         new_tournament = self.page.get_by_role("button", name=re.compile(r"^\s*(\+\s*)?Nuevo torneo\s*$", re.I)).first
@@ -116,7 +141,7 @@ class OrganizerPage(BasePage):
         return diagnostics
 
     def tournament_name_input(self):
-        test_id = self.page.get_by_test_id("organizer-tournament-name-input").first
+        test_id = self.field_by_test_id("organizer-tournaments-input-name", "organizer-tournament-name-input")
         if test_id.count() > 0:
             return test_id
         label = self.page.get_by_label(re.compile(r"Nombre", re.I)).first
@@ -131,7 +156,7 @@ class OrganizerPage(BasePage):
         return self.page.locator(".modal input[placeholder='Ej: Apertura 2026']").first
 
     def save_tournament_button(self):
-        test_id = self.page.get_by_test_id("organizer-save-tournament-button").first
+        test_id = self.first_test_id("organizer-tournaments-btn-save", "organizer-save-tournament-button")
         if test_id.count() > 0:
             return test_id
         dialog = self.dialog()
@@ -201,7 +226,7 @@ class OrganizerPage(BasePage):
         return self.page.get_by_role("dialog").first
 
     def open_category_form(self) -> None:
-        button = self.page.get_by_test_id("organizer-create-category-button").first
+        button = self.first_test_id("organizer-categories-btn-create", "organizer-create-category-button")
         if button.count() == 0:
             button = self.page.get_by_role("button", name=re.compile(r"Nueva categor|Crear primera categor", re.I)).first
         expect(button).to_be_visible(timeout=10000)
@@ -214,30 +239,39 @@ class OrganizerPage(BasePage):
 
     def fill_open_category_form(self, name: str, price: int = 5000) -> None:
         dialog = self.dialog()
-        name_input = self.page.get_by_test_id("organizer-category-name-input").first
+        name_input = self.field_by_test_id("organizer-categories-input-name", "organizer-category-name-input")
         if name_input.count() == 0:
             name_input = dialog.locator("input:not([type='number'])").first
-        if name_input.count() > 0:
+        category_name_was_filled = False
+        if self.is_fillable_field(name_input):
             expect(name_input).to_be_visible(timeout=10000)
             name_input.fill(name)
+            category_name_was_filled = True
 
-        number_inputs = dialog.locator("input[type='number']")
-        if number_inputs.count() > 0:
-            number_inputs.first.fill(str(price))
-        if number_inputs.count() > 1:
-            number_inputs.nth(1).fill("2")
+        fee_input = self.field_by_test_id("organizer-categories-input-fee")
+        qualifiers_input = self.field_by_test_id("organizer-categories-input-qualifiers-per-zone")
+        if fee_input.count() > 0:
+            fee_input.fill(str(price))
+        if qualifiers_input.count() > 0:
+            qualifiers_input.fill("2")
+        if fee_input.count() == 0 or qualifiers_input.count() == 0:
+            number_inputs = dialog.locator("input[type='number']")
+            if fee_input.count() == 0 and number_inputs.count() > 0:
+                number_inputs.first.fill(str(price))
+            if qualifiers_input.count() == 0 and number_inputs.count() > 1:
+                number_inputs.nth(1).fill("2")
 
-        save = self.page.get_by_test_id("organizer-save-category-button").first
+        save = self.first_test_id("organizer-categories-btn-save", "organizer-save-category-button")
         if save.count() == 0:
             save = dialog.get_by_role("button", name=re.compile(r"Crear|Guardar|Aceptar", re.I)).last
         expect(save).to_be_visible(timeout=10000)
         save.click()
         expect(dialog).not_to_be_visible(timeout=10000)
-        expected_name = name if name_input.count() > 0 else "Primera"
+        expected_name = name if category_name_was_filled else "Primera"
         expect(self.page.get_by_text(expected_name, exact=False).first).to_be_visible(timeout=15000)
 
     def open_pair_form(self) -> None:
-        button = self.page.get_by_test_id("organizer-create-pair-button").first
+        button = self.first_test_id("organizer-pairs-btn-create", "organizer-create-pair-button")
         if button.count() == 0:
             button = self.page.get_by_role(
                 "button",
@@ -253,17 +287,10 @@ class OrganizerPage(BasePage):
 
     def fill_open_pair_form(self, player1: str, player2: str) -> None:
         dialog = self.dialog()
-        player1_input = self.page.get_by_test_id("organizer-pair-player1-input").first
-        player2_input = self.page.get_by_test_id("organizer-pair-player2-input").first
-        if player1_input.count() == 0 or player2_input.count() == 0:
-            inputs = dialog.locator("input")
-            if inputs.count() < 2:
-                raise AssertionError("El modal de pareja no expone al menos 2 inputs visibles.")
-            player1_input = inputs.nth(0)
-            player2_input = inputs.nth(1)
+        player1_input, player2_input = self.pair_inputs()
         player1_input.fill(player1)
         player2_input.fill(player2)
-        save = self.page.get_by_test_id("organizer-save-pair-button").first
+        save = self.first_test_id("organizer-pairs-btn-save", "organizer-save-pair-button")
         if save.count() == 0:
             save = dialog.get_by_role("button", name=re.compile(r"Crear|Guardar|Aceptar|Inscribir", re.I)).last
         expect(save).to_be_visible(timeout=10000)
@@ -271,8 +298,27 @@ class OrganizerPage(BasePage):
         expect(self.page.get_by_text(player1, exact=False).first).to_be_visible(timeout=15000)
         expect(self.page.get_by_text(player2, exact=False).first).to_be_visible(timeout=15000)
 
+    def pair_inputs(self):
+        dialog = self.dialog()
+        player1_input = self.field_by_test_id("organizer-pairs-input-player1-name", "organizer-pair-player1-input")
+        player2_input = self.field_by_test_id("organizer-pairs-input-player2-name", "organizer-pair-player2-input")
+        if player1_input.count() == 0 or player2_input.count() == 0:
+            # Fallback acotado para ambientes donde los testids de player inputs no esten desplegados.
+            inputs = dialog.locator("input")
+            if inputs.count() < 2:
+                raise AssertionError("El modal de pareja no expone al menos 2 inputs visibles.")
+            player1_input = inputs.nth(0)
+            player2_input = inputs.nth(1)
+        return player1_input, player2_input
+
+    def save_pair_button(self):
+        save = self.first_test_id("organizer-pairs-btn-save", "organizer-save-pair-button")
+        if save.count() > 0:
+            return save
+        return self.dialog().get_by_role("button", name=re.compile(r"Crear|Guardar|Aceptar|Inscribir", re.I)).last
+
     def try_random_assign_zones(self) -> bool:
-        button = self.page.get_by_test_id("organizer-zones-random-assign-button").first
+        button = self.first_test_id("organizer-zones-btn-sort-random", "organizer-zones-random-assign-button")
         if button.count() == 0:
             button = self.page.get_by_role(
                 "button",
@@ -286,7 +332,9 @@ class OrganizerPage(BasePage):
         return True
 
     def set_zone_count(self, count: int) -> bool:
-        zone_count = self.page.get_by_label(re.compile(r"Cantidad de zonas", re.I)).first
+        zone_count = self.field_by_test_id("organizer-zones-input-count")
+        if zone_count.count() == 0:
+            zone_count = self.page.get_by_label(re.compile(r"Cantidad de zonas", re.I)).first
         if zone_count.count() == 0:
             zone_count = self.page.locator("input[type='number']").first
         if zone_count.count() == 0 or not zone_count.is_visible() or not zone_count.is_enabled():
@@ -296,7 +344,9 @@ class OrganizerPage(BasePage):
         return True
 
     def try_create_zones(self) -> bool:
-        button = self.page.get_by_role("button", name=re.compile(r"Crear zonas", re.I)).first
+        button = self.page.get_by_test_id("organizer-zones-btn-create").first
+        if button.count() == 0:
+            button = self.page.get_by_role("button", name=re.compile(r"Crear zonas", re.I)).first
         if button.count() == 0 or not button.is_visible() or not button.is_enabled():
             return False
         button.click()
@@ -305,7 +355,7 @@ class OrganizerPage(BasePage):
         return True
 
     def try_generate_matches(self) -> bool:
-        button = self.page.get_by_test_id("organizer-zones-generate-matches-button").first
+        button = self.first_test_id("organizer-zones-btn-generate-matches", "organizer-zones-generate-matches-button")
         if button.count() == 0:
             button = self.page.get_by_role("button", name=re.compile(r"^\s*Generar partidos\s*$", re.I)).first
         if button.count() == 0 or not button.is_visible() or not button.is_enabled():

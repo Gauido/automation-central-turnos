@@ -48,6 +48,49 @@
 - Label visual `Nombre *` no asociado al input.
 - `Podio` no aparece como tab visible actualmente.
 - Expandir exports a Posiciones PDF, Partidos Excel y Cierre PDF.
+- Negativo API: resultado `6-6` aceptado por backend, esperado HTTP 400.
+- Negativo API: reopen zona con bracket queda skipped porque build-bracket no esta disponible para ese setup.
+- Negativo Web: sortear zonas sin parejas suficientes queda permitido por UI.
+
+## Suite Negativa
+
+Comando:
+
+```text
+.\scripts\run_organizer_negative_tests.ps1
+```
+
+Resultado actual:
+
+```text
+6 passed
+1 skipped
+2 xfailed
+0 failed
+```
+
+## Suite CRUD
+
+Comando:
+
+```text
+.\scripts\run_organizer_crud_tests.ps1
+```
+
+Resultado actual:
+
+```text
+6 passed
+6 skipped
+1 xfailed
+0 failed
+```
+
+Gaps CRUD:
+
+- API categorias no se puede validar por listado porque responde 405.
+- Web no expone acciones estables para delete torneo, edit/delete categoria ni edit pair.
+- Web delete pair no remueve la pareja visible.
 
 ## Suite Normal
 

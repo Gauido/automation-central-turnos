@@ -1,4 +1,9 @@
+param(
+  [string]$AttachTestContext = "true"
+)
+
 $env:REPORT_MODE = "normal"
+$env:ATTACH_TEST_CONTEXT = $AttachTestContext
 
 .\scripts\clean_test_artifacts.ps1
 
@@ -9,7 +14,8 @@ $env:REPORT_MODE = "normal"
   tests/web/test_organizer_tournament_setup_flow.py `
   tests/web/test_organizer_match_and_report_flow.py `
   -v `
-  --headed `
+  -o cache_dir=test-results/pytest-cache `
+  --cache-clear `
   --alluredir=allure-results `
   --clean-alluredir
 

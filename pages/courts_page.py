@@ -16,10 +16,25 @@ class CourtsPage(BasePage):
         expect(self.page.get_by_text("Gestion de Canchas", exact=True)).to_be_visible()
 
     def create_court(self, name: str, number: int) -> None:
-        self.page.get_by_role("button", name="Agregar Cancha").click()
-        self.page.locator("input[name='number']").fill(str(number))
-        self.page.locator("input[name='name']").fill(name)
-        self.page.get_by_role("button", name="Crear").click()
+        create = self.page.get_by_test_id("courts-header-btn-create").first
+        if create.count() == 0:
+            create = self.page.get_by_role("button", name="Agregar Cancha")
+        create.click()
+
+        number_input = self.page.get_by_test_id("courts-create-input-number").first
+        if number_input.count() == 0:
+            number_input = self.page.locator("input[name='number']").first
+        number_input.fill(str(number))
+
+        name_input = self.page.get_by_test_id("courts-create-input-name").first
+        if name_input.count() == 0:
+            name_input = self.page.locator("input[name='name']").first
+        name_input.fill(name)
+
+        save = self.page.get_by_test_id("courts-create-btn-save").first
+        if save.count() == 0:
+            save = self.page.get_by_role("button", name="Crear")
+        save.click()
         self.wait_for_court_created(name)
 
     def wait_for_court_created(self, name: str) -> None:
@@ -50,8 +65,13 @@ class CourtsPage(BasePage):
         if court.count() == 0:
             return
 
-        card = court.first.locator("xpath=ancestor::article[1]")
-        card.get_by_role("button", name="Eliminar").click()
+        card = self.page.locator("[data-testid^='courts-card-']").filter(has_text=name).first
+        if card.count() > 0:
+            delete = card.locator("[data-testid^='courts-card-btn-delete-']").first
+        else:
+            card = court.first.locator("xpath=ancestor::article[1]")
+            delete = card.get_by_role("button", name="Eliminar")
+        delete.click()
         self.page.get_by_role("button", name="Eliminar").last.click()
         expect(self.page.get_by_text(name, exact=True)).not_to_be_visible()
 

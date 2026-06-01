@@ -6,6 +6,8 @@ from typing import Any
 
 import allure
 
+from utils.report_config import should_attach_test_context
+
 
 SENSITIVE_KEYS = {
     "authorization",
@@ -35,6 +37,8 @@ def sanitize_context(value: Any) -> Any:
 
 
 def attach_test_context(**context: Any) -> None:
+    if not should_attach_test_context():
+        return
     payload = sanitize_context(context)
     with allure.step("Datos del test"):
         allure.attach(
