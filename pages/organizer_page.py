@@ -20,6 +20,16 @@ class OrganizerPage(BasePage):
         ("report", re.compile(r"Reporte", re.I)),
         ("today", re.compile(r"Hoy", re.I)),
     )
+    export_test_ids = {
+        "fixture_pdf": "organizer-exports-btn-fixture-pdf-open",
+        "standings_pdf": "organizer-exports-btn-standings-pdf-open",
+        "matches_excel": "organizer-exports-btn-matches-excel-open",
+        "closure_pdf": "organizer-exports-btn-closure-pdf-open",
+        "podium_pdf": "organizer-exports-btn-podium-pdf-open",
+        "bracket_png": "organizer-exports-btn-bracket-png-open",
+        "podium_png": "organizer-exports-btn-podium-png-open",
+        "contacts_csv": "organizer-exports-btn-contacts-csv-open",
+    }
 
     def open(self) -> None:
         self.goto(self.path)
@@ -124,6 +134,9 @@ class OrganizerPage(BasePage):
         test_id = self.page.get_by_test_id("organizer-save-tournament-button").first
         if test_id.count() > 0:
             return test_id
+        dialog = self.dialog()
+        if dialog.count() > 0:
+            return dialog.get_by_role("button", name=re.compile(r"Crear|Guardar|Aceptar", re.I)).last
         return self.page.get_by_role("button", name=re.compile(r"Crear|Guardar|Aceptar", re.I)).first
 
     def create_basic_tournament(self, name: str | None = None) -> str:
@@ -240,11 +253,16 @@ class OrganizerPage(BasePage):
 
     def fill_open_pair_form(self, player1: str, player2: str) -> None:
         dialog = self.dialog()
-        inputs = dialog.locator("input")
-        if inputs.count() < 2:
-            raise AssertionError("El modal de pareja no expone al menos 2 inputs visibles.")
-        inputs.nth(0).fill(player1)
-        inputs.nth(1).fill(player2)
+        player1_input = self.page.get_by_test_id("organizer-pair-player1-input").first
+        player2_input = self.page.get_by_test_id("organizer-pair-player2-input").first
+        if player1_input.count() == 0 or player2_input.count() == 0:
+            inputs = dialog.locator("input")
+            if inputs.count() < 2:
+                raise AssertionError("El modal de pareja no expone al menos 2 inputs visibles.")
+            player1_input = inputs.nth(0)
+            player2_input = inputs.nth(1)
+        player1_input.fill(player1)
+        player2_input.fill(player2)
         save = self.page.get_by_test_id("organizer-save-pair-button").first
         if save.count() == 0:
             save = dialog.get_by_role("button", name=re.compile(r"Crear|Guardar|Aceptar|Inscribir", re.I)).last
@@ -254,10 +272,12 @@ class OrganizerPage(BasePage):
         expect(self.page.get_by_text(player2, exact=False).first).to_be_visible(timeout=15000)
 
     def try_random_assign_zones(self) -> bool:
-        button = self.page.get_by_role(
-            "button",
-            name=re.compile(r"Aleatorio|Sortear|Asignar|Random|Distribuir", re.I),
-        ).first
+        button = self.page.get_by_test_id("organizer-zones-random-assign-button").first
+        if button.count() == 0:
+            button = self.page.get_by_role(
+                "button",
+                name=re.compile(r"Aleatorio|Sortear|Asignar|Random|Distribuir", re.I),
+            ).first
         if button.count() == 0 or not button.is_visible() or not button.is_enabled():
             return False
         button.click()
@@ -285,7 +305,9 @@ class OrganizerPage(BasePage):
         return True
 
     def try_generate_matches(self) -> bool:
-        button = self.page.get_by_role("button", name=re.compile(r"^\s*Generar partidos\s*$", re.I)).first
+        button = self.page.get_by_test_id("organizer-zones-generate-matches-button").first
+        if button.count() == 0:
+            button = self.page.get_by_role("button", name=re.compile(r"^\s*Generar partidos\s*$", re.I)).first
         if button.count() == 0 or not button.is_visible() or not button.is_enabled():
             return False
         button.click()
@@ -349,10 +371,12 @@ class OrganizerPage(BasePage):
         return True
 
     def try_generate_bracket(self) -> bool:
-        button = self.page.get_by_role(
-            "button",
-            name=re.compile(r"Generar llave|Crear llave|Armar llave|Generar bracket|Build bracket", re.I),
-        ).first
+        button = self.page.get_by_test_id("organizer-build-bracket-button").first
+        if button.count() == 0:
+            button = self.page.get_by_role(
+                "button",
+                name=re.compile(r"Generar llave|Crear llave|Armar llave|Generar bracket|Build bracket", re.I),
+            ).first
         if button.count() == 0 or not button.is_visible() or not button.is_enabled():
             return False
         button.click()
@@ -362,9 +386,36 @@ class OrganizerPage(BasePage):
 
     def export_buttons(self):
         return {
-            "fixture_pdf": self.page.get_by_role("button", name=re.compile(r"Fixture PDF", re.I)).first,
-            "standings_pdf": self.page.get_by_role("button", name=re.compile(r"Posiciones PDF|Standings PDF", re.I)).first,
-            "matches_excel": self.page.get_by_role("button", name=re.compile(r"Partidos Excel|Matches Excel", re.I)).first,
-            "closure_pdf": self.page.get_by_role("button", name=re.compile(r"Cierre PDF", re.I)).first,
-            "podium_pdf": self.page.get_by_role("button", name=re.compile(r"Podio PDF", re.I)).first,
+            "fixture_pdf": self.export_open_button("fixture_pdf"),
+            "standings_pdf": self.export_open_button("standings_pdf"),
+            "matches_excel": self.export_open_button("matches_excel"),
+            "closure_pdf": self.export_open_button("closure_pdf"),
+            "podium_pdf": self.export_open_button("podium_pdf"),
+            "bracket_png": self.export_open_button("bracket_png"),
+            "podium_png": self.export_open_button("podium_png"),
+            "contacts_csv": self.export_open_button("contacts_csv"),
         }
+
+    def export_open_button(self, kind: str):
+        test_id = self.export_test_ids.get(kind)
+        if test_id:
+            button = self.page.get_by_test_id(test_id).first
+            if button.count() > 0:
+                return button
+        fallback_patterns = {
+            "fixture_pdf": r"Fixture PDF",
+            "standings_pdf": r"Posiciones PDF|Standings PDF",
+            "matches_excel": r"Partidos Excel|Matches Excel",
+            "closure_pdf": r"Cierre PDF",
+            "podium_pdf": r"Podio PDF",
+            "bracket_png": r"Bracket PNG|Llave PNG",
+            "podium_png": r"Podio PNG",
+            "contacts_csv": r"Contacts CSV|Contactos CSV",
+        }
+        return self.page.get_by_role("button", name=re.compile(fallback_patterns.get(kind, kind), re.I)).first
+
+    def export_download_button(self):
+        button = self.page.get_by_test_id("organizer-exports-btn-download").first
+        if button.count() > 0:
+            return button
+        return self.dialog().get_by_role("button", name=re.compile(r"Descargar|Download", re.I)).last

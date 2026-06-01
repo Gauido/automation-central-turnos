@@ -4,6 +4,9 @@ from api.base_client import BaseClient
 
 
 class OrganizerClient(BaseClient):
+    def list_tournaments(self):
+        return self.get("/api/organizer/tournaments")
+
     def create_tournament(self, payload: dict[str, Any]):
         return self.post("/api/organizer/tournaments", json=payload)
 

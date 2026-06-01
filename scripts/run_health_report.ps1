@@ -4,6 +4,7 @@ $env:REPORT_MODE = "normal"
 
 .\.venv\Scripts\pytest.exe `
   tests/api/test_api_organizer.py `
+  tests/api/test_api_qa_cleanup_organizer.py `
   tests/web/test_organizer_smoke.py `
   tests/web/test_organizer_tournament_setup_flow.py `
   tests/web/test_organizer_match_and_report_flow.py `

@@ -2,21 +2,22 @@
 
 ## Fecha
 
-2026-05-31
+2026-06-01
 
 ## Suites Ejecutadas
 
 | Suite | Archivo | Resultado |
 |---|---|---|
 | API Organizer | `tests/api/test_api_organizer.py` | 8 passed |
+| QA Cleanup Organizer | `tests/api/test_api_qa_cleanup_organizer.py` | 1 passed |
 | Organizer Smoke | `tests/web/test_organizer_smoke.py` | 3 passed |
 | Tournament Setup Flow | `tests/web/test_organizer_tournament_setup_flow.py` | 3 passed |
-| Match And Report Flow | `tests/web/test_organizer_match_and_report_flow.py` | 3 passed, 1 skipped |
+| Match And Report Flow | `tests/web/test_organizer_match_and_report_flow.py` | 4 passed |
 
 ## Resultado Global
 
-- Passed: 17
-- Skipped: 1
+- Passed: 19
+- Skipped: 0
 - Failed: 0
 
 ## Cobertura Funcional Validada
@@ -38,14 +39,15 @@
 - Carga de resultado 6-3 / 6-4.
 - Llaves/bracket.
 - Reporte economico.
+- Cleanup especifico Organizer.
+- Export Fixture PDF por modal y descarga real.
 
 ## Gaps Conocidos
 
-- No hay `data-testid` en Organizer Web de forma consistente.
+- Page Object prioriza `data-testid`; mantiene fallbacks porque no todos los IDs del contrato estan confirmados visualmente en todos los ambientes.
 - Label visual `Nombre *` no asociado al input.
 - `Podio` no aparece como tab visible actualmente.
-- Exports visibles, pero `page.expect_download` no detecta descarga para Fixture PDF.
-- Falta contrato claro de exports: descarga real, blob, navegacion, popup o endpoint.
+- Expandir exports a Posiciones PDF, Partidos Excel y Cierre PDF.
 
 ## Suite Normal
 
@@ -64,16 +66,9 @@ powershell -ExecutionPolicy Bypass -File .\scripts\run_health_report.ps1
 Resultado:
 
 ```text
-17 passed
-1 skipped
+19 passed
+0 skipped
 0 failed
-```
-
-Skip:
-
-```text
-tests/web/test_organizer_match_and_report_flow.py::test_organizer_exports_available
-El boton de exportacion fixture_pdf no disparo descarga detectable.
 ```
 
 Warnings no bloqueantes:

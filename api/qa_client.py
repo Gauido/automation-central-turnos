@@ -24,6 +24,15 @@ class QaClient(BaseClient):
     def cleanup(self):
         return self.post("/cleanup")
 
+    def cleanup_organizer(self) -> dict:
+        response = self.post("/cleanup/organizer", json={})
+        assert response.status_code == 200
+        body = response.json()
+        assert body.get("success") is True
+        assert body.get("tenantId") == 9001
+        assert isinstance(body.get("deletedCounts"), dict)
+        return body
+
     def reset_customer(self, customer_id: int | str):
         return self.post(f"/reset-customer/{customer_id}")
 

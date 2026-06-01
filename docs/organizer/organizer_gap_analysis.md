@@ -1,8 +1,11 @@
 # Organizer LITE Gap Analysis
 
-## Gaps De Testabilidad
+## Estado De Testabilidad
 
-- Organizer Web no expone `data-testid` en lista, modales, tabs, resultado, bracket, reporte ni exports.
+- Contrato recibido: Organizer Web expone `data-testid` con formato `{modulo}-{seccion}-{tipo}-{accion-o-target}`.
+- `pages/organizer_page.py` fue adaptado para priorizar `get_by_test_id()`.
+- Se conservan fallbacks por rol/texto mientras se confirma que todos los testids estan disponibles en ambiente.
+- Corrida sanitaria 2026-06-01: suite normal paso usando los testids disponibles y fallbacks acotados.
 - Modal `Nuevo torneo` tiene label visual no asociado:
 
 ```html
@@ -22,17 +25,23 @@ div[role="dialog"] input[placeholder="Ej: Apertura 2026"]
 
 - `Podio` no aparece como tab visible en el detalle actual de Organizer Web.
 - `Podio PDF` no aparece visible en exports actuales.
-- Exports visibles (`Fixture PDF`, `Posiciones PDF`, `Partidos Excel`, `Cierre PDF`) no tienen contrato UI claro para automatizar descarga.
-- `Fixture PDF` esta visible/habilitado, pero `page.expect_download` no detecta descarga.
+- Exports tienen contrato recibido:
+  - abrir modal con `organizer-exports-btn-{kind}-open`;
+  - descargar con `organizer-exports-btn-download`.
+  - Fixture PDF usa `organizer-exports-btn-fixture-pdf-open`.
+- Corrida sanitaria 2026-06-01: Fixture PDF descarga correctamente.
 
-## Contratos A Confirmar
+## Cleanup Organizer
 
-- Exports: confirmar si cada accion debe:
-  - descargar archivo real;
-  - abrir popup;
-  - navegar a URL;
-  - consumir blob;
-  - usar endpoint API directo.
+- Confirmado por contrato recibido: `POST /api/qa/cleanup/organizer`.
+- Alias documentado: `POST /api/qa/organizer/cleanup`.
+- `/api/qa/reset` no limpia tablas `organizer_*`.
+- Test tecnico: `tests/api/test_api_qa_cleanup_organizer.py`.
+- Corrida sanitaria 2026-06-01: cleanup Organizer paso y borro al menos 1 torneo.
+
+## Contratos A Confirmar En Corrida
+
+- Expandir exports a Posiciones PDF, Partidos Excel y Cierre PDF.
 - Podio: confirmar si debe existir como tab Web o solo como endpoint/export.
 
 ## Warning No Bloqueante
@@ -61,10 +70,8 @@ No bloquea ejecuciones, pero conviene corregir permisos o limpiar `.pytest_cache
 - `data-testid="organizer-match-result-button"`
 - `data-testid="organizer-save-result-button"`
 - `data-testid="organizer-build-bracket-button"`
-- `data-testid="organizer-export-fixture-pdf"`
-- `data-testid="organizer-export-standings-pdf"`
-- `data-testid="organizer-export-matches-xlsx"`
-- `data-testid="organizer-export-closure-pdf"`
+- `data-testid="organizer-exports-btn-fixture-pdf-open"`
+- `data-testid="organizer-exports-btn-download"`
 
 ## Recomendacion De Accesibilidad
 

@@ -8,7 +8,7 @@ from pages.organizer_page import OrganizerPage
 from utils.allure_helpers import attach_final_screenshot
 
 
-pytestmark = [pytest.mark.web, pytest.mark.organizer]
+pytestmark = [pytest.mark.web, pytest.mark.organizer, pytest.mark.usefixtures("clean_organizer_data")]
 
 
 def _login_owner(page: Page, settings: Settings) -> None:
@@ -20,27 +20,10 @@ def _login_owner(page: Page, settings: Settings) -> None:
     login_page.expect_logged_in()
 
 
-def _attach_context(settings: Settings, browser_name: str) -> None:
-    allure.attach(
-        "\n".join(
-            [
-                f"URL testeada: {str(settings.web_base_url).rstrip('/')}/organizer",
-                "Usuario utilizado: owner QA desde entorno",
-                f"Browser: {browser_name}",
-                f"Entorno: {settings.env}",
-            ]
-        ),
-        name="Datos del test",
-        attachment_type=allure.attachment_type.TEXT,
-    )
-
-
 @allure.feature("Organizer LITE")
 @allure.story("Page load")
 @pytest.mark.smoke
-def test_organizer_page_loads(page: Page, settings: Settings, browser_name: str) -> None:
-    _attach_context(settings, browser_name)
-
+def test_organizer_page_loads(page: Page, settings: Settings) -> None:
     with allure.step("Login owner"):
         _login_owner(page, settings)
 
@@ -54,9 +37,7 @@ def test_organizer_page_loads(page: Page, settings: Settings, browser_name: str)
 @allure.feature("Organizer LITE")
 @allure.story("Crear torneo basico")
 @pytest.mark.smoke
-def test_organizer_create_tournament_basic(page: Page, settings: Settings, browser_name: str) -> None:
-    _attach_context(settings, browser_name)
-
+def test_organizer_create_tournament_basic(page: Page, settings: Settings) -> None:
     with allure.step("Login owner"):
         _login_owner(page, settings)
 
@@ -77,9 +58,7 @@ def test_organizer_create_tournament_basic(page: Page, settings: Settings, brows
 
 @allure.feature("Organizer LITE")
 @allure.story("Tabs detalle")
-def test_organizer_detail_tabs_are_visible(page: Page, settings: Settings, browser_name: str) -> None:
-    _attach_context(settings, browser_name)
-
+def test_organizer_detail_tabs_are_visible(page: Page, settings: Settings) -> None:
     with allure.step("Login owner"):
         _login_owner(page, settings)
 

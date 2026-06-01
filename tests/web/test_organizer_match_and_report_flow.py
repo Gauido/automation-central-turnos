@@ -10,7 +10,7 @@ from tests.web.test_organizer_tournament_setup_flow import _create_pairs, _creat
 from utils.allure_helpers import attach_final_screenshot
 
 
-pytestmark = [pytest.mark.web, pytest.mark.organizer]
+pytestmark = [pytest.mark.web, pytest.mark.organizer, pytest.mark.usefixtures("clean_organizer_data")]
 
 
 def _prepare_fixture(page: Page, settings: Settings, zone_count: int = 2) -> OrganizerPage:
@@ -98,34 +98,32 @@ def test_organizer_report_tab_basic(page: Page, settings: Settings) -> None:
 def test_organizer_exports_available(page: Page, settings: Settings) -> None:
     organizer = _prepare_fixture(page, settings, zone_count=2)
 
-    with allure.step("Descubrir acciones de exportacion"):
+    with allure.step("Abrir export Fixture PDF"):
         exports_dom = _debug_discover(page, "organizer-exports")
         if exports_dom:
             assert exports_dom["visibleText"]
+        open_button = organizer.export_open_button("fixture_pdf")
+        if open_button.count() == 0 or not open_button.is_visible() or not open_button.is_enabled():
+            attach_final_screenshot(page, "organizer-export-fixture-open-missing")
+            pytest.skip("No esta disponible el testid/boton organizer-exports-btn-fixture-pdf-open.")
+        open_button.click()
 
-    visible_buttons = {
-        name: button
-        for name, button in organizer.export_buttons().items()
-        if button.count() > 0 and button.is_visible() and button.is_enabled()
-    }
-    if not visible_buttons:
-        pytest.skip("No hay botones de exportacion visibles/habilitados en Organizer Web.")
-
-    downloaded = []
-    for name, button in visible_buttons.items():
+    with allure.step("Descargar Fixture PDF desde modal"):
+        download_button = organizer.export_download_button()
+        if download_button.count() == 0 or not download_button.is_visible() or not download_button.is_enabled():
+            attach_final_screenshot(page, "organizer-export-download-missing")
+            pytest.skip("No esta disponible el testid/boton organizer-exports-btn-download.")
         try:
             with page.expect_download(timeout=15000) as download_info:
-                button.click()
+                download_button.click()
             download = download_info.value
-            downloaded.append((name, download.suggested_filename))
-            assert re.search(r"\.(pdf|xlsx|csv)$", download.suggested_filename, re.I)
+            assert download.suggested_filename.lower().endswith(".pdf")
         except PlaywrightTimeoutError:
-            attach_final_screenshot(page, f"organizer-export-{name}-blocked")
-            pytest.skip(f"El boton de exportacion {name} no disparo descarga detectable.")
+            attach_final_screenshot(page, "organizer-export-fixture-pdf-blocked")
+            pytest.skip("El flujo Fixture PDF no disparo descarga detectable con el contrato de modal.")
 
     allure.attach(
-        "\n".join(f"{name}: {filename}" for name, filename in downloaded),
+        f"fixture_pdf: {download.suggested_filename}",
         name="exports-descargados.txt",
         attachment_type=allure.attachment_type.TEXT,
     )
-    assert downloaded

@@ -16,6 +16,7 @@ from api.qa_client import QaClient
 from config.settings import Settings, get_settings
 from utils.json_reader import read_json
 from utils.logger import get_logger
+from utils.test_context_reporter import attach_test_context
 
 
 logger = get_logger(__name__)
@@ -69,18 +70,93 @@ def pytest_sessionstart(session: pytest.Session) -> None:
     )
 
 
-def pytest_runtest_setup(item: pytest.Item) -> None:
+def _organizer_test_type(node: pytest.Item) -> str:
+    if "web" in {marker.name for marker in node.iter_markers()}:
+        return "web"
+    if "api" in {marker.name for marker in node.iter_markers()}:
+        return "api"
+    return "unknown"
+
+
+def _organizer_created_data(nodeid: str) -> dict:
+    data: dict = {}
+    if "create_tournament" in nodeid or "smoke" in nodeid or "flow" in nodeid:
+        data["torneo"] = "QA_AUTO_Organizer_*"
+    if "category" in nodeid or "pairs" in nodeid or "zones" in nodeid or "match" in nodeid or "report" in nodeid:
+        data["categoria"] = "QA Categoria*"
+    if "pairs" in nodeid or "zones" in nodeid or "match" in nodeid or "report" in nodeid:
+        data["parejas"] = 4
+    if "zones" in nodeid or "match" in nodeid or "report" in nodeid:
+        data["zonas"] = 2
+    return data
+
+
+def _organizer_endpoints(nodeid: str) -> list[str]:
+    endpoints = []
+    if "test_api_organizer" in nodeid:
+        endpoints.extend(
+            [
+                "POST /api/organizer/tournaments",
+                "POST /api/organizer/tournaments/{id}/categories",
+                "POST /api/organizer/categories/{cid}/pairs",
+                "POST /api/organizer/categories/{cid}/zones",
+                "POST /api/organizer/categories/{cid}/zones/random-assign",
+                "POST /api/organizer/categories/{cid}/zones/generate-matches",
+            ]
+        )
+    if "cleanup_organizer" in nodeid:
+        endpoints.append("POST /api/qa/cleanup/organizer")
+    return endpoints
+
+
+def _attach_organizer_test_context(item: pytest.Item) -> None:
+    markers = sorted(marker.name for marker in item.iter_markers())
+    if "organizer" not in markers:
+        return
+
     settings = get_settings()
-    data = {
-        "nodeid": item.nodeid,
-        "markers": sorted(marker.name for marker in item.iter_markers()),
-        "env": settings.env,
+    test_type = _organizer_test_type(item)
+    browser = item.funcargs.get("browser_name") if test_type == "web" else None
+    headed = bool(item.config.getoption("--headed"))
+    cleanup_enabled = "clean_organizer_data" in getattr(item, "fixturenames", ())
+    if item.get_closest_marker("usefixtures"):
+        cleanup_enabled = cleanup_enabled or "clean_organizer_data" in item.get_closest_marker("usefixtures").args
+
+    context = {
+        "contexto": {
+            "ambiente": str(settings.env).upper(),
+            "modulo": "Organizer LITE",
+            "tipo_test": test_type,
+            "browser": browser,
+            "modo_ejecucion": "headed" if headed else "headless",
+            "base_url": str(settings.web_base_url),
+            "api_base_url": str(settings.api_base_url),
+        },
+        "usuario": {
+            "rol": "owner",
+            "email": settings.owner_email,
+        },
+        "tenant": {
+            "id": 9001,
+        },
+        "datos_creados": _organizer_created_data(item.nodeid),
+        "cleanup": {
+            "endpoint": "POST /api/qa/cleanup/organizer",
+            "antes_del_test": cleanup_enabled,
+            "despues_del_test": cleanup_enabled,
+        },
+        "extra": {
+            "nodeid": item.nodeid,
+            "markers": markers,
+            "endpoints_principales": _organizer_endpoints(item.nodeid),
+        },
     }
-    allure.attach(
-        json.dumps(data, indent=2, ensure_ascii=False),
-        name="datos-del-test.json",
-        attachment_type=allure.attachment_type.JSON,
-    )
+    attach_test_context(**context)
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_runtest_call(item: pytest.Item) -> None:
+    _attach_organizer_test_context(item)
 
 
 @pytest.fixture(scope="session")
@@ -191,6 +267,13 @@ def qa_test_data(qa_client: QaClient) -> dict:
         pytest.skip("QA test-data endpoint not available")
     body = response.json()
     return body.get("data") or body
+
+
+@pytest.fixture()
+def clean_organizer_data(qa_client: QaClient) -> Generator[None, None, None]:
+    qa_client.cleanup_organizer()
+    yield
+    qa_client.cleanup_organizer()
 
 
 @pytest.fixture(scope="session")

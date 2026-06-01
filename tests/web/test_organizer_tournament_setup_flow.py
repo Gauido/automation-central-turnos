@@ -12,7 +12,7 @@ from utils.dom_discovery import discover_dom
 from utils.report_config import is_debug_report
 
 
-pytestmark = [pytest.mark.web, pytest.mark.organizer, pytest.mark.smoke]
+pytestmark = [pytest.mark.web, pytest.mark.organizer, pytest.mark.smoke, pytest.mark.usefixtures("clean_organizer_data")]
 
 
 def _login_owner(page: Page, settings: Settings) -> None:

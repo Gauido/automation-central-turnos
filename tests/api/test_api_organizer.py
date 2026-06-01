@@ -8,7 +8,7 @@ from api.organizer_client import OrganizerClient
 from config.settings import Settings
 
 
-pytestmark = [pytest.mark.api, pytest.mark.organizer]
+pytestmark = [pytest.mark.api, pytest.mark.organizer, pytest.mark.usefixtures("clean_organizer_data")]
 
 TENANT_ID = "9001"
 
